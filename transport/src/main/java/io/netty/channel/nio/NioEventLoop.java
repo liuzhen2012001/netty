@@ -482,6 +482,8 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
                 cancelledKeys = 0;
                 needsToSelectAgain = false;
+                //此线程分配给 IO 操作所占的时间比(即运行 processSelectedKeys 耗时在整个循环中所占用的时间).
+                // 例如 ioRatio 默认是 50, 则表示 IO 操作和执行 task 的所占用的线程执行时间比是 1 : 1
                 final int ioRatio = this.ioRatio;
                 if (ioRatio == 100) {
                     try {
@@ -657,6 +659,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
 
         try {
+
             int readyOps = k.readyOps();
             // We first need to call finishConnect() before try to trigger a read(...) or write(...) as otherwise
             // the NIO JDK channel implementation may throw a NotYetConnectedException.
@@ -678,6 +681,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
             // Also check for readOps of 0 to workaround possible JDK bug which may otherwise lead
             // to a spin loop
+            //可读
             if ((readyOps & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0 || readyOps == 0) {
                 unsafe.read();
             }
@@ -752,6 +756,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
     int selectNow() throws IOException {
         try {
+            //检查当前是否有就绪的 IO 事件, 如果有, 则返回就绪 IO 事件的个数; 如果没有, 则返回0
             return selector.selectNow();
         } finally {
             // restore wakeup state if needed
@@ -788,6 +793,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                     break;
                 }
 
+                //阻塞获取
                 int selectedKeys = selector.select(timeoutMillis);
                 selectCnt ++;
 
